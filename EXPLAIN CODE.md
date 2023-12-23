@@ -3,101 +3,126 @@ This is an assignment from the DAP Project by Keiko and Marshanda 3ITE1
 
 
 # Menyiapkan Dataset
-'''html
+```
 ids <- read.csv("C:/CCIT UI/SEMESTER 3/DAP/IDS/ids.csv", sep=";")
-'''
+```
 
 # So that the absolute value of 0 is not mistaken for NA
+```
 ids[is.na(ids)] <- 0
-
+```
 # Read in data and examine structure
+```
 str(ids)
-
+```
 # Custom normalization function
+```
 normalize <- function(x) { 
   return((x - min(x)) / (max(x) - min(x)))
 }
-
+```
 # Apply normalization to entire data frame
+```
 ids_norm <- as.data.frame(lapply(ids, normalize))
 str(ids_norm)
-
+```
 # Confirm that the range is now between zero and one
+```
 summary(ids_norm$labels)
-
+```
 # Compared to the original minimum and maximum
+```
 summary(ids$labels)
-
+```
 # Create training data
+```
 ids_train <- ids_norm[1:"1571", ]
 head(ids_train$labels)
 str(ids_train)
-
+```
 # Create testing data
+```
 ids_test <- ids_norm[1572:"2245", ]
 head(ids_test$labels)
 str(ids_test)
+```
 
-#Standard Deviation for train and test data to labels column
+# Standard Deviation for train and test data to labels column
+```
 sd(ids_train$labels)
 sd(ids_test$labels)
-
+```
 # Training a model on the data 
 # Train the neuralnet model
+```
 library(neuralnet)
-
+```
 # Simple ANN with only a single hidden neuron
+```
 set.seed(12345) # to guarantee repeatable results
 ids_model <- neuralnet(formula = labels ~ srv_count + dst_host_diff_srv_rate +
                          dst_host_same_src_port_rate + is_guest_login + flag + 
                          wrong_fragment,
                        data = ids_train)
-
+```
 # Visualize the network topology
+```
 plot(ids_model)
-
+```
 # Evaluating model performance 
 # Obtain model results
+```
 model_results <- compute(ids_model, ids_test[1:41])
-
+```
 # Obtain predicted labels values
+```
 predicted_labels <- model_results$net.result
-
+```
 # Examine the correlation between predicted and actual values
+```
 predicted_labels <- as.vector(predicted_labels)
 cor(predicted_labels, ids_test$labels)
-
+```
 # Improving model performance 
 # A more complex neural network topology with 5 hidden neurons
-#Prepare Data
+# Prepare Data
+```
 ids2 <- ids_norm
 str(ids2)
 ids2 <- as.data.frame(lapply(ids2, as.integer))
-
-#Prepare Data Train
+```
+# Prepare Data Train
+```
 ids_train2 <- ids2[1:"1571", ]
 str(ids_train2)
-
-#Prepare Data Test
+```
+# Prepare Data Test
+```
 ids_test2 <- ids2[1572:"2245", ]
 str(ids_test2)
-
+```
 # ANN with 5 hidden neuron
+```
 set.seed(12345) # to guarantee repeatable results
 ids_model2 <- neuralnet(labels ~ srv_count + dst_host_diff_srv_rate +
                           dst_host_same_src_port_rate + is_guest_login + flag + 
                           wrong_fragment,
                         data = ids_train2, hidden = 5)
+```
 
 # plot the network
+```
 plot(ids_model2)
-
+```
 # evaluate the results as we did before
+```
 model_results2 <- compute(ids_model2, ids_test[1:41])
 predicted_labels2 <- model_results2$net.result
 cor(predicted_labels2, ids_test$labels)
+```
 
 # Train the neuralnet model with sigmoid activation
+```
 library(neuralnet)
 
 set.seed(12345) # to guarantee repeatable results
@@ -105,53 +130,68 @@ ids_model_sigmoid <- neuralnet(formula = labels ~ srv_count + dst_host_diff_srv_
                                  dst_host_same_src_port_rate + is_guest_login + flag + 
                                  wrong_fragment,
                                data = ids_train, act.fct = "logistic")
-
+```
 # Visualize the network topology with sigmoid activation
+```
 plot(ids_model_sigmoid)
-
+```
 # Obtain model results and predicted labels values for sigmoid activation
+```
 model_results_sigmoid <- compute(ids_model_sigmoid, ids_test[1:41])
 predicted_labels_sigmoid <- model_results_sigmoid$net.result
-
+```
 # Examine the correlation between predicted and actual values for sigmoid activation
+```
 cor_sigmoid <- cor(predicted_labels_sigmoid, ids_test$labels)
 print(cor_sigmoid)
-
+```
 # Train the neuralnet model with tanh activation
+```
 ids_model_tanh <- neuralnet(formula = labels ~ srv_count + dst_host_diff_srv_rate +
                               dst_host_same_src_port_rate + is_guest_login + flag + 
                               wrong_fragment,
                             data = ids_train, act.fct = "tanh")
+```
 
 # Visualize the network topology with tanh activation
+```
 plot(ids_model_tanh)
-
+```
 # Obtain model results and predicted strength values for tanh activation
+```
 model_results_tanh <- compute(ids_model_tanh, ids_test[1:41])
 predicted_labels_tanh <- model_results_tanh$net.result
-
+```
 # Examine the correlation between predicted and actual values for tanh activation
+```
 cor_tanh <- cor(predicted_labels_tanh, ids_test$labels)
 print(cor_tanh)
-
+```
 # Train the sigmoid model with ReLu activation
+```
 install.packages("sigmoid")
 library("sigmoid")
+```
 
 # Train the neuralnet model with ReLu activation
+```
 ids_model_relu <- neuralnet(formula = labels ~ srv_count + dst_host_diff_srv_rate +
                               dst_host_same_src_port_rate + is_guest_login + flag + 
                               wrong_fragment,
                             data = ids_train, act.fct = relu)
+```
 
 # Visualize the network topology with tanh activation
+```
 plot(ids_model_relu)
-
+```
 # Obtain model results and predicted strength values for tanh activation
+```
 model_results_relu <- compute(ids_model_relu, ids_test[1:41])
 predicted_labels_relu <- model_results_relu$net.result
-
+```
 # Examine the correlation between predicted and actual values for tanh activation
+```
 cor_relu <- cor(predicted_labels_relu, ids_test$labels)
 print(cor_relu)
-
+```
