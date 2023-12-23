@@ -2,8 +2,10 @@
 This is an assignment from the DAP Project by Keiko and Marshanda 3ITE1
 
 
-# Preparing Data
+# Menyiapkan Dataset
+'''html
 ids <- read.csv("C:/CCIT UI/SEMESTER 3/DAP/IDS/ids.csv", sep=";")
+'''
 
 # So that the absolute value of 0 is not mistaken for NA
 ids[is.na(ids)] <- 0
