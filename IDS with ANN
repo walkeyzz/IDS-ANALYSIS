@@ -120,7 +120,7 @@ ids_model_tanh <- neuralnet(formula = labels ~ srv_count + dst_host_diff_srv_rat
 # Visualize the network topology with tanh activation
 plot(ids_model_tanh)
 
-# Obtain model results and predicted strength values for tanh activation
+# Obtain model results and predicted labels values for tanh activation
 model_results_tanh <- compute(ids_model_tanh, ids_test[1:41])
 predicted_labels_tanh <- model_results_tanh$net.result
 
@@ -138,14 +138,14 @@ ids_model_relu <- neuralnet(formula = labels ~ srv_count + dst_host_diff_srv_rat
                               wrong_fragment,
                             data = ids_train, act.fct = relu)
 
-# Visualize the network topology with tanh activation
+# Visualize the network topology with  ReLu  activation
 plot(ids_model_relu)
 
-# Obtain model results and predicted strength values for tanh activation
+# Obtain model results and predicted labels values for  ReLu  activation
 model_results_relu <- compute(ids_model_relu, ids_test[1:41])
 predicted_labels_relu <- model_results_relu$net.result
 
-# Examine the correlation between predicted and actual values for tanh activation
+# Examine the correlation between predicted and actual values for ReLu activation
 cor_relu <- cor(predicted_labels_relu, ids_test$labels)
 print(cor_relu)
 
