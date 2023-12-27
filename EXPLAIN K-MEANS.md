@@ -3,48 +3,57 @@
 ids <- read.csv("C:/Users/ASUS/Downloads/ids lama.csv", sep=";", stringsAsFactors=TRUE)
 View(ids)
 ```
-# Langkah 2 - Transformasi dan Persiapan Data
+
+mengimport data dari file dan menampilkan dataset di rstudio
+
+# melihat visualisasi distribusi data 
+```
+boxplot(ids)
+```
+![ids-sblm](https://github.com/walkeyzz/IDS-ANALYSIS/assets/147698371/f0b84119-f837-4fa0-8f4e-5c8a68dea4e4)
+
+distribusi data belum baik
+
+# So that the absolute value of 0 is not mistaken for NA
+```
+ids[is.na(ids)] <- 0
+```
+
+# Read in data and examine structure
 ```
 str(ids)
 ```
-# Langkah 2.1 Handle missing value
+
+# Custom normalization function
 ```
-ids[is.na(ids)] <- 0
-ids[is.na(ids)]
-ids <- ids[-22545, ]
-ids <- as.data.frame(ids)
-any(is.na(ids))
-sum(is.na(ids))
-colSums(is.na(ids))
-testingids <- na.omit(ids)
-testingids <- as.data.frame(testingids)
+normalize <- function(x) { 
+  return((x - min(x)) / (max(x) - min(x)))
+}
 ```
-# Langkah 2.2 Normalisasi min-max-
+menormalisasi data dengan metode max min agar rentang nilai dari dataset lebih baik
+
+# Apply normalization to entire data frame
 ```
-summary(testingids)
-head(testingids)
+ids_norm <- as.data.frame(lapply(ids, normalize))
+str(ids_norm)
 ```
-# visualisasi sebaran data per variabel
+# Confirm that the range is now between zero and one
 ```
-numeric_columns <- testingids[, sapply(testingids, is.numeric)]
-numeric_columns
-boxplot(numeric_columns)
+summary(ids_norm$labels)
 ```
-# min-max normalization
+
+# Compared to the original minimum and maximum
 ```
-max = apply(numeric_columns , 2 , max)
-max
-min = apply(numeric_columns, 2 , min)
-min
-testingids2 = as.data.frame(scale(numeric_columns, center = min, scale = max - min))
-head(testingids2)
-boxplot(testingids2)
-summary(testingids2)
-round(prop.table(table(testingids2$labels)) * 100, digits = 1)
+summary(ids$labels)
+boxplot(ids_norm)
 ```
-# Langkah 2.3 CORRELATION
+![9c9d05fd-57a8-47b9-bd0a-16245aa52edb](https://github.com/walkeyzz/IDS-ANALYSIS/assets/147698371/7cd3d4fe-26f0-4894-80d6-2b77dd611d04)
+
+data ids sudah terdistribusi normal
+
+# Langkah 2 CORRELATION
 ```
-Faktor_Berpengaruh <- cor(testingids2[c("duration", "protocol_type", "service", "flag", "src_bytes", 
+Faktor_Berpengaruh <- cor(ids_norm[c("duration", "protocol_type", "service", "flag", "src_bytes", 
                                 "dst_bytes", "land", "wrong_fragment", "urgent", "hot", 
                                 "num_failed_logins", "logged_in", "num_compromised", 
                                 "root_shell", "su_attempted", "num_root", 
@@ -62,7 +71,9 @@ Faktor_Berpengaruh <- cor(testingids2[c("duration", "protocol_type", "service", 
 
 print(Faktor_Berpengaruh)
 ```
-# melihat tingkat korelasi antara variabel dengan label 
+karena variabel dari data ids cukup banyak, maka akan dilakukan filterisasi dengan melihat korelasi terlebih dahulu
+
+# melihat nilai korelasi antara variabel dengan kolom "labels"
 ```
 Faktor_Berpengaruh["duration", "labels"]
 Faktor_Berpengaruh["protocol_type", "labels"]
@@ -105,180 +116,68 @@ Faktor_Berpengaruh["dst_host_srv_serror_rate", "labels"]
 Faktor_Berpengaruh["dst_host_rerror_rate", "labels"]
 Faktor_Berpengaruh["dst_host_srv_rerror_rate", "labels"]
 ```
-# Ambil variabel dengan korelasi tertinggi
+mendapatkan nilai korelasi dari perbandingan variabel dengan kolom "labels"
+
+# Mendapatkan daftar nama kolom dari dataset
 ```
-top_six_variables <- c("flag", "srv_count", "diff_srv_rate", "dst_host_diff_srv_rate", "dst_host_same_src_port_rate", "dst_host_srv_diff_host_rate")
+column_names <- colnames(ids_norm)
 ```
-# Buat model regresi hanya dengan variabel yang terpilih
+
+# Menampilkan daftar nama kolom
 ```
-model <- lm(labels ~ ., data = ids[, c(top_six_variables, "labels")])
+print(column_names)
 ```
-# Tampilkan ringkasan model
+
+# menjadikan 6 kolom dengan nilai korelasi tertinggi menjadi satu dataset
 ```
-summary(model)
+selected_columns <- c("srv_count", "dst_host_diff_srv_rate", "dst_host_same_same_port_rate", "is_guest_login", "wrong_fragment", "count", "labels")
+```
+
+# Memilih kolom-kolom yang diinginkan dari dataset
+```
+ids_new <- ids_norm[, column_names %in% selected_columns]
+```
+
+# Menampilkan dataset baru
+```
+print(ids_new)
+str(ids_new)
 ```
 
 # Langkah 3 - Mulai analisis k-means
 ```
-install.packages("factoextra")
 library(factoextra)
 library(cluster)
 ```
-# Menghapus kolom-kolom dengan variasi nol atau sangat rendah
+# membentuk cluster (sesuaikan dengan cluster yg dipilih)
 ```
-testingids3 <- testingids3[, apply(testingids3, 2, var) != 0]
+cluster <- kmeans(ids_new,5)
 ```
-# metode elbow-melihat cluster optimum untuk nilai k nanti
+# visualisasi cluster
 ```
-fviz_nbclust(testingids3,kmeans,method = "wss")
+fviz_cluster(cluster,ids_new) 
 ```
-# etode silhoette
-```
-fviz_nbclust(testingids3,kmeans,method = "silhouette")
-```
-# metode gapstat
-```
-fviz_nbclust(testingids3,kmeans,method = "gap_stat")
-```
-# membentuk cluster (sesuaikan dengan cluster optimum)
-```
-cluster <- kmeans(testingids3,5)
-```
-# isualisasi cluster
-```
-fviz_cluster(cluster,testingids3) 
-```
+
 # interpretasi dan penamaan cluster
 ```
 cluster$centers
+k5 = kmeans(ids_new, centers = 5, nstart = 25)
+```
+![91e2e332-843b-407e-9d3f-ab352db2d160](https://github.com/walkeyzz/IDS-ANALYSIS/assets/147698371/673e4eb2-715c-4cfd-8973-5c758cd1af41)
 
-k5 = kmeans(testingids3, centers = 5, nstart = 25)
-
-final=data.frame(numeric_columns, k5$cluster)
-
+# disini untuk melihat sebaran tiap cluster ada berapa banyak
+```
+print(k5)
+```
+# mengembalikan dari data normalisasi ke data sebelum normalisasi
+```
+final=data.frame(ids, k5$cluster)
 View(final)
 ```
 
-# RUMUS MANUAL K-MEANS
-
-# Jumlah kluster yang diinginkan
+# Menggunakan fungsi dist() untuk menghitung jarak Euclidean
 ```
-cluster <- 5
+distances <- dist(cluster$centers, method = "euclidean")
+print(distances)
 ```
-# Nomor awal kluster
-```
-c_initial <- c(0,1,2,3,4)
-```
-# Inisialisasi centroid
-```
-centroid <- testingids3[1:cluster,]
-```
-# Data frame untuk centroid awal
-```
-cent_DF <- data.frame(c = c_initial, centroid)
-```
-# Menampilkan Hasil
-```
-print (centroid)
-print (cent_DF)
-```
-# Inisialisasi matriks d dan c
-```
-d <- matrix(0, nrow = nrow(testingids3), ncol = cluster)
-c <- matrix(0, nrow = nrow(testingids3), ncol = 1)
-d
-```
-# Matriks untuk centroid yang diperbarui
-```
-updCentroid <- matrix(0, nrow = nrow(centroid), ncol = ncol(testingids3))
-```
-# Status untuk mengontrol loop
-```
-status <- 10
-```
-# Iterasi awal
-```
-iter <- 0
-```
-# Data frame dari test3
-```
-df <- data.frame(testingids3)
-updCentroid
-```
-# bikin inisial plot/plot awal pake ggplot2
-```
-initPlot <- ggplot(df,aes(srv_count, service)) +
-  geom_point(size=3)+ geom_point(data=cent_DF, color=c("red","yellow", "green", "pink", "purple"), size=10)
-initPlot
-ggsave(initPlot, file = "IDS Test, 5 Cluster - initial.png", width = 40, height = 20, unit = "cm")
-```
-```
-while (status != 0)
-{
-  iter <- iter + 1
-  
-  fn <- paste("IDS Test,", cluster, "Cluster - iter", iter, ".png", sep = " ")
-  ```
-  # Menghitung jarak setiap data ke setiap centroid
-  ```
-  for (j in 1:cluster)
-  {
-    for (i in 1:nrow(testingids3))
-    {
-      d[i,j] = sqrt(sum((testingids3[i,1:ncol(testingids3)] - centroid[j,1:ncol(centroid)])^2))
-    }
-  }
-  ```
-  # Menentukan nomor kluster untuk setiap data
-  ```
-  for(i in 1:nrow(d)){ 
-    c[i] <- (which(d[i,] == min(d[i,]), arr.ind = T)) - 1
-  }
-  ```
-  # Plot hasil klasterisasi
-  ```
-  df <- data.frame(c,testingids3)
-  cent_DF <- data.frame(c = c_initial, centroid)
-  # gg <- merge(df,aggregate(cbind(mean.dst_host_diff_srv_rate=dst_host_diff_srv_rate, mean.V2=V2)~c , df, mean), by="c")
-  gg <- merge(df, cent_DF, by="c")
-  
-  plot <- ggplot(gg, aes(srv_count.x, service.x, color=factor(c))) + geom_point(size=3) +
-    geom_point(aes(x = srv_count.y, y = service.y),size=5) +
-    geom_segment(aes(x = srv_count.y, y = service.y, xend = srv_count.x, yend = service.x))
-  
-  ggsave(plot, file = fn, width = 40, height = 20, units = "cm")
-  ```
-  # Menghitung centroid baru berdasarkan data yang dikelompokkan
-  ```
-  compare <- cbind(testingids2, c)
-  
-  for (i in 1:cluster)
-  {
-    x <- subset(compare[,1:2], compare[,3] == i-1)
-    
-    for(j in 1:ncol(testingids3))
-    {
-      updCentroid[i,j] <- mean(x[,j])
-    }
-  }
-  ```
-  # Memperbarui centroid saat ini
-  ```
-  if(all(updCentroid == centroid)){
-    status = 0
-  }
-  else {
-    st 
-    } 
-  }
-}
-```
-
-
-
-
-
-
-
-
-
+ menghitung matriks jarak antara pusat-pusat kluster dalam model k-means
