@@ -27,14 +27,14 @@ boxplot(ids)
 
 distribusi data belum baik, maka dari itu kita harus melakukan normalisasi data terlebih dahulu
 
-# So that the absolute value of 0 is not mistaken for NA
+# Agar nilai mutlak 0 tidak dikira NA
 ```
 ids[is.na(ids)] <- 0
 ```
 pada dataset ini, ada beberapa kolom yang isi datanya "0", tetapi bukan data kosong dan memang nilainya 0. 
 maka kita submit syntax ini untuk menginisialisasi nilai 0 bukan data NA 
 
-# Read in data and examine structure
+# Baca data dan periksa strukturnya
 ```
 str(ids)
 ```
@@ -42,7 +42,7 @@ str(ids)
 
 syntax ini bertujuan untuk melihat tipe dari struktur data, karena kita ingin menyesuaikan dengan k-means nanti yang mengaharuskan data bertipe "numerik"
 
-# Custom normalization function
+# Fungsi normalisasi khusus
 ```
 normalize <- function(x) { 
   return((x - min(x)) / (max(x) - min(x)))
@@ -50,7 +50,7 @@ normalize <- function(x) {
 ```
 menormalisasi data dengan metode max min agar rentang nilai dari dataset lebih baik
 
-# Apply normalization to entire data frame
+# Terapkan normalisasi ke seluruh data frame
 ```
 ids_norm <- as.data.frame(lapply(ids, normalize))
 str(ids_norm)
@@ -59,7 +59,7 @@ str(ids_norm)
 
 melakukan normalisasi pada setiap elemen dari objek ids dan menyimpan hasilnya dalam bentuk data frame baru yang disebut ids_norm.
 
-# Confirm that the range is now between zero and one
+# Konfirmasikan bahwa rentangnya sekarang antara nol dan satu
 ```
 summary(ids_norm$labels)
 ```
@@ -67,7 +67,7 @@ summary(ids_norm$labels)
 
 Kesimpulan yang dapat diambil adalah distribusi nilai dalam kolom labels memiliki variasi, dengan rata-rata sekitar 0.4630. Kuartil pertama dan kuartil ketiga yang relatif dekat menunjukkan bahwa sebagian besar data terkonsentrasi di sekitar nilai tersebut. Nilai maksimum adalah 1.0000, yang menunjukkan adanya variasi yang signifikan antara nilai minimum dan maksimum.
 
-# Compared to the original minimum and maximum
+# Dibandingkan dengan minimum dan maksimum aslinya
 ```
 boxplot(ids_norm)
 ```
@@ -75,7 +75,7 @@ boxplot(ids_norm)
 
 data ids sudah terdistribusi normal
 
-# Langkah 2 CORRELATION
+# Langkah 2 - CORRELATION
 ```
 Faktor_Berpengaruh <- cor(ids_norm[c("duration", "protocol_type", "service", "flag", "src_bytes", 
                                 "dst_bytes", "land", "wrong_fragment", "urgent", "hot", 
@@ -97,7 +97,7 @@ print(Faktor_Berpengaruh)
 ```
 karena variabel dari data ids cukup banyak, maka akan dilakukan filterisasi dengan melihat korelasi terlebih dahulu
 
-# melihat nilai korelasi antara variabel dengan kolom "labels"
+# Melihat nilai korelasi antara variabel dengan kolom "labels"
 ```
 Faktor_Berpengaruh["duration", "labels"]
 Faktor_Berpengaruh["protocol_type", "labels"]
@@ -149,11 +149,13 @@ print(column_names)
 ```
 ![image](https://github.com/walkeyzz/IDS-ANALYSIS/assets/147698371/877da455-9614-42c9-acd8-4bc6bfa4066b)
 
+hal ini dilakukan untuk mempermudah pembuatan set data baru yaitu dengan menggunakan nama/header kolom
+
 # Menjadikan 6 kolom dengan nilai korelasi tertinggi menjadi satu dataset
 ```
 selected_columns <- c("srv_count", "dst_host_diff_srv_rate", "dst_host_same_src_port_rate", "is_guest_login", "wrong_fragment", "count", "labels")
 ```
-Agar proses analisis berjalan dengan lebih cepat, maka 6 kolom dengan tingkat korelasi tertinggi dengan label dipilih dan dijadikan satu set data baru
+agar proses analisis berjalan dengan lebih cepat, maka 6 kolom dengan tingkat korelasi tertinggi dengan label dipilih dan dijadikan satu set data baru
 
 # Memilih kolom-kolom yang diinginkan dari dataset
 ```
@@ -179,13 +181,15 @@ packages ini merupakan packages yang diperlukan jika ingin menganalisis mengguna
 ```
 cluster <- kmeans(ids_new,5)
 ```
+pada analisis kali ini, kita ingin membuat 5 kluster 
+
 # visualisasi cluster
 ```
 fviz_cluster(cluster,ids_new) 
 ```
 ![Rplot](https://github.com/walkeyzz/IDS-ANALYSIS/assets/147698371/186cef37-ede7-46d4-a898-a87d1738069b)
 
-Ini adalah hasil visualisasi menggunakan algoritma k-means yang dibuat menjadi 5 cluster dari data ids_new
+ini adalah hasil visualisasi menggunakan algoritma k-means yang dibuat menjadi 5 cluster dari data ids_new
 
 # interpretasi dan penamaan cluster
 ```
@@ -237,6 +241,7 @@ print(k5)
 Terdapat 5 kluster dengan ukuran masing-masing kluster adalah 14361, 517, 6213, 329, dan 1125 observasi.
 
 Kesimpulannya, klustering telah berhasil membagi data menjadi 5 kluster dengan karakteristik yang berbeda, dan kita dapat menganalisis ciri khas masing-masing kluster berdasarkan nilai rata-rata variabel.
+
 ![image](https://github.com/walkeyzz/IDS-ANALYSIS/assets/147698371/14b535b4-c460-40f1-b6dc-7e1bb3aae95b)
 
 Rasio (between_SS / total_SS) atau disebut juga sebagai proporsi varians antara kelompok terhadap total varians, mengindikasikan seberapa baik klausterisasi berhasil memisahkan data. Pada kasus ini, nilai 68.8% menunjukkan bahwa sekitar 68.8% dari total varians dapat dijelaskan oleh perbedaan antara kelompok (kluster), sementara sisanya mungkin merupakan varians yang ada di dalam kluster itu sendiri. Semakin tinggi nilai rasio ini, semakin baik klausterisasi tersebut dalam memisahkan data ke dalam kelompok-kelompok yang berbeda.
