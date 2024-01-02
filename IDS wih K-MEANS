@@ -1,34 +1,50 @@
-##---------Langkah 1 - Mengumpulkan Data---------------
+#--Langkah 1 - Mengumpulkan Data 
 
 ids <- read.csv("C:/Users/ASUS/Downloads/ids lama.csv", sep=";", stringsAsFactors=TRUE)
 View(ids)
+# mengimport data dari file dan menampilkan dataset di rstudio, disini data terdiri dari 42 kolom dan 22.455 baris
 
-#melihat visualisasi distribusi data 
+#--Melihat visualisasi distribusi data 
+
 boxplot(ids)
+# distribusi data belum baik, maka dari itu kita harus melakukan normalisasi data terlebih dahulu
 
-# So that the absolute value of 0 is not mistaken for NA
+#--Agar nilai mutlak 0 tidak dikira NA
+
 ids[is.na(ids)] <- 0
+# pada dataset ini, ada beberapa kolom yang isi datanya "0", tetapi bukan data kosong dan memang nilainya 0. 
+maka kita submit syntax ini untuk menginisialisasi nilai 0 bukan data NA 
 
-# Read in data and examine structure
+#--Baca data dan periksa strukturnya
+
 str(ids)
+# syntax ini bertujuan untuk melihat tipe dari struktur data, karena kita ingin menyesuaikan dengan k-means nanti yang mengaharuskan data bertipe "numerik"
 
-# Custom normalization function
+#--Fungsi normalisasi khusus
+
 normalize <- function(x) { 
   return((x - min(x)) / (max(x) - min(x)))
 }
+# menormalisasi data dengan metode max min agar rentang nilai dari dataset lebih baik
 
-# Apply normalization to entire data frame
+#--Terapkan normalisasi ke seluruh data frame
+
 ids_norm <- as.data.frame(lapply(ids, normalize))
 str(ids_norm)
+# melakukan normalisasi pada setiap elemen dari objek ids dan menyimpan hasilnya dalam bentuk data frame baru yang disebut ids_norm.
 
-# Confirm that the range is now between zero and one
+#--Konfirmasikan bahwa rentangnya sekarang antara nol dan satu
+
 summary(ids_norm$labels)
+# Kesimpulan yang dapat diambil adalah distribusi nilai dalam kolom labels memiliki variasi, dengan rata-rata sekitar 0.4630. Kuartil pertama dan kuartil ketiga yang relatif dekat menunjukkan bahwa sebagian besar data terkonsentrasi di sekitar nilai tersebut. Nilai maksimum adalah 1.0000, yang menunjukkan adanya variasi yang signifikan antara nilai minimum dan maksimum.
 
-# Compared to the original minimum and maximum
-summary(ids$labels)
+#--Dibandingkan dengan minimum dan maksimum aslinya
+
 boxplot(ids_norm)
+# data ids sudah terdistribusi normal
 
-#--------Langkah 2 CORRELATION------------------------------
+#--Langkah 2 - CORRELATION
+
 Faktor_Berpengaruh <- cor(ids_norm[c("duration", "protocol_type", "service", "flag", "src_bytes", 
                                 "dst_bytes", "land", "wrong_fragment", "urgent", "hot", 
                                 "num_failed_logins", "logged_in", "num_compromised", 
@@ -47,7 +63,10 @@ Faktor_Berpengaruh <- cor(ids_norm[c("duration", "protocol_type", "service", "fl
 
 print(Faktor_Berpengaruh)
 
-# melihat nilai korelasi antara variabel dengan kolom "labels"
+# karena variabel dari data ids cukup banyak, maka akan dilakukan filterisasi dengan melihat korelasi terlebih dahulu
+
+#--Melihat nilai korelasi antara variabel dengan kolom "labels"
+
 Faktor_Berpengaruh["duration", "labels"]
 Faktor_Berpengaruh["protocol_type", "labels"]
 Faktor_Berpengaruh["service", "labels"]
@@ -88,48 +107,62 @@ Faktor_Berpengaruh["dst_host_serror_rate", "labels"]
 Faktor_Berpengaruh["dst_host_srv_serror_rate", "labels"]
 Faktor_Berpengaruh["dst_host_rerror_rate", "labels"]
 Faktor_Berpengaruh["dst_host_srv_rerror_rate", "labels"]
+```
+# mendapatkan nilai korelasi dari perbandingan variabel dengan kolom "labels"
 
-# Mendapatkan daftar nama kolom dari dataset
+#--Mendapatkan daftar nama kolom dari dataset 
+
 column_names <- colnames(ids_norm)
-
-# Menampilkan daftar nama kolom
 print(column_names)
+# hal ini dilakukan untuk mempermudah pembuatan set data baru yaitu dengan menggunakan nama/header kolom
 
-# menjadikan 6 kolom dengan nilai korelasi tertinggi menjadi satu dataset
-selected_columns <- c("srv_count", "dst_host_diff_srv_rate", "dst_host_same_same_port_rate", "is_guest_login", "wrong_fragment", "count", "labels")
+#--Menjadikan 6 kolom dengan nilai korelasi tertinggi menjadi satu dataset
 
-# Memilih kolom-kolom yang diinginkan dari dataset
+selected_columns <- c("srv_count", "dst_host_diff_srv_rate", "dst_host_same_src_port_rate", "is_guest_login", "wrong_fragment", "count", "labels")
+# agar proses analisis berjalan dengan lebih cepat, maka 6 kolom dengan tingkat korelasi tertinggi dengan label dipilih dan dijadikan satu set data baru
+
+#--Memilih kolom-kolom yang diinginkan dari dataset
+
 ids_new <- ids_norm[, column_names %in% selected_columns]
+# memilih kolom-kolom tertentu dari ids_norm berdasarkan kolom-kolom yang terdapat dalam vektor selected_columns
 
-# Menampilkan dataset baru
+#--Menampilkan dataset baru
+
 print(ids_new)
 str(ids_new)
 
-##---------Langkah 3 - Mulai analisis k-means---------------
+#-- Langkah 3 - Mulai analisis k-means
 
 library(factoextra)
 library(cluster)
+# packages ini merupakan packages yang diperlukan jika ingin menganalisis menggunakan algoritma k-means
 
-#membentuk cluster (sesuaikan dengan cluster optimum)
+#--Membentuk cluster (sesuaikan dengan cluster yg dipilih)
+
 cluster <- kmeans(ids_new,5)
+# pada analisis kali ini, kita ingin membuat 5 kluster 
 
-#visualisasi cluster
+#--Visualisasi cluster
+
 fviz_cluster(cluster,ids_new) 
+# ini adalah hasil visualisasi menggunakan algoritma k-means yang dibuat menjadi 5 cluster dari data ids_new
 
-#interpretasi dan penamaan cluster
+#--interpretasi dan penamaan cluster
+
 cluster$centers
-
 k5 = kmeans(ids_new, centers = 5, nstart = 25)
 
-# disini untuk melihat sebaran tiap cluster ada berapa banyak
+#--Disini untuk melihat sebaran tiap cluster ada berapa banyak
+
 print(k5)
 
-# mengembalikan dari data normalisasi ke data sebelum normalisasi
-final=data.frame(ids, k5$cluster)
+#--Mengembalikan dari data normalisasi ke data sebelum normalisasi
 
+final=data.frame(ids, k5$cluster)
 View(final)
 
-# Menggunakan fungsi dist() untuk menghitung jarak Euclidean
+#--Menggunakan fungsi dist() untuk menghitung jarak Euclidean
+
 distances <- dist(cluster$centers, method = "euclidean")
 print(distances)
-
+# Semakin kecil jarak, semakin dekat entitas tersebut. 
